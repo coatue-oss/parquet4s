@@ -4,10 +4,12 @@ import java.util.TimeZone
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.parquet.column.ParquetProperties.WriterVersion
 import org.apache.parquet.hadoop.api.WriteSupport
 import org.apache.parquet.hadoop.api.WriteSupport.WriteContext
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.hadoop.{ParquetFileWriter, ParquetWriter => HadoopParquetWriter}
+import org.apache.parquet.io.OutputFile
 import org.apache.parquet.io.api.RecordConsumer
 import org.apache.parquet.schema.MessageType
 import org.slf4j.LoggerFactory
@@ -29,6 +31,8 @@ trait ParquetWriter[T] {
     */
   def write(path: String, data: Iterable[T], options: ParquetWriter.Options)
 
+  def writeS(outputFile: OutputFile, data: Iterable[T], options: ParquetWriter.Options): Unit
+
 }
 
 
@@ -36,14 +40,26 @@ object ParquetWriter  {
 
   private[parquet4s] type InternalWriter = HadoopParquetWriter[RowParquetRecord]
 
-  private class Builder(path: Path, schema: MessageType) extends HadoopParquetWriter.Builder[RowParquetRecord, Builder](path) {
+  private class BuilderPath(path: Path, schema: MessageType) extends HadoopParquetWriter.Builder[RowParquetRecord, BuilderPath](path) {
     private val logger = LoggerFactory.getLogger(ParquetWriter.this.getClass)
 
     if (logger.isDebugEnabled) {
       logger.debug(s"""Resolved following schema to write Parquet to "$path":\n$schema""")
     }
 
-    override def self(): Builder = this
+    override def self(): BuilderPath = this
+
+    override def getWriteSupport(conf: Configuration): WriteSupport[RowParquetRecord] = new ParquetWriteSupport(schema, Map.empty)
+  }
+
+  private class BuilderOutputFile(outputFile: OutputFile, schema: MessageType) extends HadoopParquetWriter.Builder[RowParquetRecord, BuilderOutputFile](outputFile) {
+    private val logger = LoggerFactory.getLogger(ParquetWriter.this.getClass)
+
+    if (logger.isDebugEnabled) {
+      logger.debug(s"""Resolved following schema to write Parquet to STream":\n$schema""")
+    }
+
+    override def self(): BuilderOutputFile = this
 
     override def getWriteSupport(conf: Configuration): WriteSupport[RowParquetRecord] = new ParquetWriteSupport(schema, Map.empty)
   }
@@ -69,7 +85,7 @@ object ParquetWriter  {
   }
 
   private[parquet4s] def internalWriter(path: Path, schema: MessageType, options: Options): InternalWriter =
-    new Builder(path, schema)
+    new BuilderPath(path ,schema)
       .withWriteMode(options.writeMode)
       .withCompressionCodec(options.compressionCodecName)
       .withDictionaryEncoding(options.dictionaryEncodingEnabled)
@@ -78,6 +94,19 @@ object ParquetWriter  {
       .withPageSize(options.pageSize)
       .withRowGroupSize(options.rowGroupSize)
       .withValidation(options.validationEnabled)
+      .build()
+
+  private[parquet4s] def internalWriter(outputFile: OutputFile, schema: MessageType, options: Options): InternalWriter =
+    new BuilderOutputFile( outputFile, schema)
+      .withWriteMode(options.writeMode)
+      .withCompressionCodec(options.compressionCodecName)
+      .withDictionaryEncoding(options.dictionaryEncodingEnabled)
+      .withDictionaryPageSize(options.dictionaryPageSize)
+      .withMaxPaddingSize(options.maxPaddingSize)
+      .withPageSize(options.pageSize)
+      .withRowGroupSize(options.rowGroupSize)
+      .withValidation(options.validationEnabled)
+    .withWriterVersion(WriterVersion.PARQUET_1_0)
       .build()
 
   /**
@@ -93,12 +122,27 @@ object ParquetWriter  {
   def write[T](path: String, data: Iterable[T], options: ParquetWriter.Options = ParquetWriter.Options())
               (implicit writer: ParquetWriter[T]): Unit = writer.write(path, data, options)
 
+  def writeS[T](outputFile: OutputFile, data: Iterable[T], options: ParquetWriter.Options = ParquetWriter.Options())
+              (implicit writer: ParquetWriter[T]): Unit = writer.writeS(outputFile, data, options)
+
   /**
     * Default instance of [[ParquetWriter]]
     */
   implicit def writer[T: ParquetRecordEncoder : ParquetSchemaResolver]: ParquetWriter[T] = new ParquetWriter[T] {
     override def write(path: String, data: Iterable[T], options: Options = Options()): Unit = {
       val writer = internalWriter(new Path(path), ParquetSchemaResolver.resolveSchema[T], options)
+      val valueCodecConfiguration = options.toValueCodecConfiguration
+      try {
+        data.foreach { elem =>
+          writer.write(ParquetRecordEncoder.encode[T](elem, valueCodecConfiguration))
+        }
+      } finally {
+        writer.close()
+      }
+    }
+
+    override def writeS(outputFile: OutputFile, data: Iterable[T], options: Options): Unit = {
+      val writer = internalWriter(outputFile, ParquetSchemaResolver.resolveSchema[T], options)
       val valueCodecConfiguration = options.toValueCodecConfiguration
       try {
         data.foreach { elem =>

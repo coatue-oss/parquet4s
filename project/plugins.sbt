@@ -1,3 +1,5 @@
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "latest.release")
+addSbtPlugin("com.frugalmechanic" % "fm-sbt-s3-resolver" % "0.18.0")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.9")
 addSbtPlugin("ch.epfl.scala" % "sbt-bloop" % "1.2.5")

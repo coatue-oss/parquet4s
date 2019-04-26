@@ -1,5 +1,8 @@
 import bloop.integrations.sbt.BloopDefaults
 
+import com.amazonaws.auth.{AWSCredentialsProviderChain, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.auth.profile.ProfileCredentialsProvider
+
 lazy val resolvers =  Seq(
   Opts.resolver.sonatypeReleases,
   Resolver.jcenterRepo
@@ -9,7 +12,7 @@ lazy val supportedScalaVersions = Seq("2.11.12", "2.12.8")
 
 lazy val commonSettings = Seq(
   Keys.organization := "com.github.mjakubowski84",
-  Keys.version := "0.5.0-SNAPSHOT",
+  Keys.version := "0.5.0-COATUE-SNAPSHOT",
   Keys.isSnapshot := true,
   Keys.scalaVersion := "2.11.12",
   Keys.scalacOptions ++= Seq("-deprecation", "-target:jvm-1.8"),
@@ -17,60 +20,16 @@ lazy val commonSettings = Seq(
   Keys.resolvers := resolvers
 )
 
-lazy val publishSettings = {
-  import xerial.sbt.Sonatype._
-  Seq(
-    Keys.credentials ++= Seq(
-      Credentials(
-        realm = "Sonatype Nexus Repository Manager",
-        host = "oss.sonatype.org",
-        userName = sys.env.getOrElse(
-          "SONATYPE_USER_NAME",
-          {
-            streams.value.log.warn("Undefined environment variable: SONATYPE_USER_NAME")
-            "UNDEFINED"
-          }
-        ),
-        passwd = sys.env.getOrElse(
-          "SONATYPE_PASSWORD",
-          {
-            streams.value.log.warn("Undefined environment variable: SONATYPE_PASSWORD")
-            "UNDEFINED"
-          }
-        )
-      )
-    ),
-    Keys.licenses := Seq("MIT" -> url("https://opensource.org/licenses/MIT")),
-    Keys.homepage := Some(url("https://github.com/mjakubowski84/parquet4s")),
-    Keys.scmInfo := Some(
-      ScmInfo(
-        browseUrl = url("https://github.com/mjakubowski84/parquet4s"),
-        connection = "scm:git@github.com:mjakubowski84/parquet4s.git"
-      )
-    ),
-    SonatypeKeys.sonatypeProjectHosting := Some(GitHubHosting(
-      user = "mjakubowski84", repository = "parquet4s", email = "mjakubowski84@gmail.com")
-    ),
-    SonatypeKeys.sonatypeProfileName := "com.github.mjakubowski84",
-    Keys.developers := List(
-      Developer(
-        id = "mjakubowski84",
-        name = "Marcin Jakubowski",
-        email = "mjakubowski84@gmail.com",
-        url = url("https://github.com/mjakubowski84")
-      )
-    ),
-    Keys.publishMavenStyle := true,
-    Keys.publishTo := Some(
-      if (isSnapshot.value)
-        Opts.resolver.mavenLocalFile
-      else
-        Opts.resolver.sonatypeStaging
-    ),
-    Keys.publishArtifact in Test := false,
-    Keys.publishArtifact in IntegrationTest := false
-  ) ++ Signing.signingSettings
-}
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishTo := Some("Coatue OSS Snapshots" at "s3://coatue-datascience-scratch/repo/snapshots/"),  // TODO: switch to real repo
+  s3CredentialsProvider := { (bucket: String) =>
+    new AWSCredentialsProviderChain(
+      new ProfileCredentialsProvider("default"),
+      DefaultAWSCredentialsProviderChain.getInstance()
+    )
+  }
+)
 
 lazy val itSettings = Defaults.itSettings ++ Project.inConfig(IntegrationTest)(Seq(
   Keys.fork := true,

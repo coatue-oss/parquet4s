@@ -5,6 +5,7 @@ import java.util.TimeZone
 
 import org.apache.hadoop.fs.Path
 import org.apache.parquet.hadoop.{ParquetReader => HadoopParquetReader}
+import org.apache.parquet.io.InputFile
 
 /**
   * Type class that reads Parquet files from given path.
@@ -19,6 +20,15 @@ trait ParquetReader[T] {
     * @return iterable collection of data read from path
     */
   def read(path: String, options: ParquetReader.Options): ParquetIterable[T]
+
+  /**
+    * Reads data from given input file stream
+    * @param inputStream Stream
+    * @param options configuration of how Parquet files should be read
+    * @return iterable collection of data read from path
+    */
+  def readS(inputStream: InputFile, options: ParquetReader.Options): ParquetIterable[T]
+
 
 }
 
@@ -42,6 +52,9 @@ object ParquetReader {
   private def newParquetIterable[T : ParquetRecordDecoder](path: String, options: Options): ParquetIterable[T] =
     newParquetIterable(HadoopParquetReader.builder[RowParquetRecord](new ParquetReadSupport(), new Path(path)), options)
 
+  private def newParquetIterable[T : ParquetRecordDecoder](inputFile: InputFile, options: Options): ParquetIterable[T] =
+    newParquetIterable(new InputFileBuilder[RowParquetRecord](inputFile, new ParquetReadSupport()), options)
+
   private[parquet4s] def newParquetIterable[T : ParquetRecordDecoder](builder: Builder, options: Options): ParquetIterable[T] =
     new ParquetIterableImpl(builder, options)
 
@@ -62,10 +75,23 @@ object ParquetReader {
     reader.read(path, options)
 
   /**
+    * Creates a new [[ParquetIterable]] over the data from the input stream
+    * @param inputFile Wrapper over input stream
+    * @param options configuration of how Parquet files should be read
+    * @param reader
+    * @tparam T
+    * @return
+    */
+  def readS[T](inputFile: InputFile, options: Options = Options())(implicit reader: ParquetReader[T]): ParquetIterable[T] =
+    reader.readS(inputFile, options)
+
+  /**
     * Default implementation of [[ParquetReader]].
     */
   implicit def reader[T : ParquetRecordDecoder]: ParquetReader[T] = new ParquetReader[T] {
     override def read(path: String, options: Options = Options()): ParquetIterable[T] = newParquetIterable(path, options)
+
+    override def readS(inputStream: InputFile, options: Options): ParquetIterable[T] = newParquetIterable(inputStream, options)
   }
 
 }

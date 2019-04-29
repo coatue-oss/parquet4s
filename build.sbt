@@ -16,7 +16,7 @@ lazy val commonSettings = Seq(
   Keys.isSnapshot := true,
   Keys.scalaVersion := "2.11.12",
   Keys.scalacOptions ++= Seq("-deprecation", "-target:jvm-1.8"),
-  Keys.javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-unchecked", "-deprecation", "-feature"),
+  Keys.javacOptions ++= Seq("-source", "1.8", "-target", "1.8","-unchecked",  "-deprecation", "-feature"),
   Keys.resolvers := resolvers
 )
 

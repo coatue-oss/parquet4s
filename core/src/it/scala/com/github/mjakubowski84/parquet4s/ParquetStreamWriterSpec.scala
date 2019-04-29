@@ -8,7 +8,7 @@ case class Test(
                  t: String,
                  f: Option[Int]
                )
-class ParquetStreamWriter extends FreeSpec
+class ParquetStreamWriterSpec extends FreeSpec
 with Matchers
 with BeforeAndAfter with SparkHelper {
   import sparkSession.implicits._

@@ -1,7 +1,6 @@
 package com.github.mjakubowski84.parquet4s;
 
 import org.apache.parquet.io.DelegatingPositionOutputStream;
-import org.apache.parquet.io.PositionOutputStream;
 
 import java.io.IOException;
 

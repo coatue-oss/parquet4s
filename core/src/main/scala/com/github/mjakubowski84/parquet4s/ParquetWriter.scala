@@ -31,6 +31,12 @@ trait ParquetWriter[T] {
     */
   def write(path: String, data: Iterable[T], options: ParquetWriter.Options)
 
+  /**
+    * Writes data out to given OutputFile
+    * @param outputFile a stream representation
+    * @param data data to write
+    * @param options configuration of how Parquet files should be created and written
+    */
   def writeS(outputFile: OutputFile, data: Iterable[T], options: ParquetWriter.Options): Unit
 
 }
@@ -106,7 +112,7 @@ object ParquetWriter  {
       .withPageSize(options.pageSize)
       .withRowGroupSize(options.rowGroupSize)
       .withValidation(options.validationEnabled)
-    .withWriterVersion(WriterVersion.PARQUET_1_0)
+      .withWriterVersion(WriterVersion.PARQUET_1_0)
       .build()
 
   /**
@@ -122,6 +128,15 @@ object ParquetWriter  {
   def write[T](path: String, data: Iterable[T], options: ParquetWriter.Options = ParquetWriter.Options())
               (implicit writer: ParquetWriter[T]): Unit = writer.write(path, data, options)
 
+  /**
+    * Writes an iterable collection of data as a Parquet object.
+    * OutputFile wraps an outputstream.
+    * @param outputFile Wrapper for output stream to write to
+    * @param data collection of <i>T</i> that will be written as a Parquet in memory object
+    * @param options configuration of how Parquet files should be created and written
+    * @param writer [[ParquetWriter]] that will be used to write data
+    * @tparam T   type of data, will be used also to resolve the schema of Parquet files
+    */
   def writeS[T](outputFile: OutputFile, data: Iterable[T], options: ParquetWriter.Options = ParquetWriter.Options())
               (implicit writer: ParquetWriter[T]): Unit = writer.writeS(outputFile, data, options)
 

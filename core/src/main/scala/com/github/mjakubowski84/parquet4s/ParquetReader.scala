@@ -21,6 +21,12 @@ trait ParquetReader[T] {
     */
   def read(path: String, options: ParquetReader.Options): ParquetIterable[T]
 
+  /**
+    * Reads data from given input file stream
+    * @param inputStream Stream
+    * @param options configuration of how Parquet files should be read
+    * @return iterable collection of data read from path
+    */
   def readS(inputStream: InputFile, options: ParquetReader.Options): ParquetIterable[T]
 
 
@@ -68,6 +74,14 @@ object ParquetReader {
   def read[T](path: String, options: Options = Options())(implicit reader: ParquetReader[T]): ParquetIterable[T] =
     reader.read(path, options)
 
+  /**
+    * Creates a new [[ParquetIterable]] over the data from the input stream
+    * @param inputFile Wrapper over input stream
+    * @param options configuration of how Parquet files should be read
+    * @param reader
+    * @tparam T
+    * @return
+    */
   def readS[T](inputFile: InputFile, options: Options = Options())(implicit reader: ParquetReader[T]): ParquetIterable[T] =
     reader.readS(inputFile, options)
 

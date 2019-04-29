@@ -1,12 +1,10 @@
 package com.github.mjakubowski84.parquet4s;
 
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.SeekableInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 public class StreamInputFile implements InputFile {
     private long length;

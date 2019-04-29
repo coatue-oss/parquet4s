@@ -1,46 +1,11 @@
 package com.github.mjakubowski84.parquet4s;
 
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
 import org.apache.parquet.io.DelegatingSeekableInputStream;
-import org.apache.parquet.io.SeekableInputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-
-//public class StreamSeekable extends DelegatingSeekableInputStream {
-//
-//    private long position = 0;
-//    private FSDataInputStream stream;
-//
-//    public StreamSeekable(FSDataInputStream inputStream) {
-//        super(inputStream);
-//        this.stream = inputStream;
-//    }
-//
-//    @Override
-//    public long getPos() throws IOException {
-//        return stream.getPos();
-//    }
-//
-//    @Override
-//    public void seek(long newPos) throws IOException {
-//        stream.seek(newPos);
-//    }
-//
-//    @Override
-//    public void readFully(byte[] bytes) throws IOException {
-//        stream.readFully(bytes, 0, bytes.length);
-//    }
-//
-//    @Override
-//    public void readFully(byte[] bytes, int start, int len) throws IOException {
-//        stream.readFully(bytes);
-//    }
-//}
 
 public class StreamSeekable extends DelegatingSeekableInputStream implements Seekable,
         PositionedReadable {
@@ -50,7 +15,7 @@ public class StreamSeekable extends DelegatingSeekableInputStream implements See
 
     public StreamSeekable(ByteArrayInputStream in) {
         super(in);
-        this.inputStream = in ;//new ByteArrayInputStream(recommendationBytes);
+        this.inputStream = in ;
         pos = 0;
     }
 
